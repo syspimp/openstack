@@ -1,12 +1,13 @@
-# this answer file sets up
+# this answer file for packstack sets up Openstack Icehouse
 # a multi node cluster
-# using 3 nics and vlans
-# em1 = management interface on vlan 2 (native and trunked on switch)
+# using 3 nics, OVS bridges and vlans
+# em1 = management interface on vlan 2 (vlan 2 native and trunked on switch)
 # p1p1 = external vm, br-ex, vlan 3, added interface p1p1.3 to bridge (vlan 3 native, trunked on switch)
 # p1p2 = internal bridge/vm, br-int, vlans 4,5, added interface p1p2 to bridge (trunked on switch)
 # 192.168.2.155 = network/controller
 # set the COMPUTE_HOSTS to whatever other hosts
-# setup the vlan interfaces by using the network/ifcfg-* files, then reboot
+# setup the vlan interfaces by using the network/ifcfg-* files, disable selinux (/etc/sysconfig/selinux),
+# then reboot so vlan kernel module is loaded and selinux is turned off
 # might have to manually add the interfaces to the ovs bridge after running packstack
 # 
 [general]
