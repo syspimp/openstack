@@ -1,0 +1,6 @@
+TYPE=Ethernet
+NAME=em2
+DEVICE=em2
+BOOTPROTO=none
+DEFROUTE=no
+ONBOOT=yes

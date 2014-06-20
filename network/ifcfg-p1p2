@@ -1,0 +1,6 @@
+TYPE=Ethernet
+NAME=p1p2
+DEVICE=p1p2
+BOOTPROTO=none
+DEFROUTE=no
+ONBOOT=yes
