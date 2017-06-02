@@ -1,0 +1,15 @@
+heat_template_version: 2013-05-23
+
+description: Simple template to deploy and test AWS
+
+resources:
+  my_instance:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: aws-us-east-1
+      image: Centos 7 x86_64 GenericCloud 1503
+      flavor: m1.medium
+outputs:
+  instance_ip:
+    description: The IP address of the deployed instance
+    value: { get_attr: [my_instance, first_address] }

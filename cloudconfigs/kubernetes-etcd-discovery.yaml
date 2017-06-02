@@ -1,0 +1,36 @@
+kubernetes:
+  apiVersion: v1beta3
+  kind: ReplicationController
+  metadata:
+    name: !!!NAME!!!
+    labels:
+      name: !!!NAME!!!
+  spec:
+    replicas: 1
+    selector:
+      name: !!!NAME!!!
+    template:
+      metadata:
+        name: !!!NAME!!!
+        labels:
+          name: !!!NAME!!!
+      spec:
+        containers:
+        - name: !!!NAME!!!
+          image: docker-registry.cld.yourcompany.com:5000/apps/etcd-discovery:latest
+          ports:
+          - containerPort: 8087
+            protocol: TCP
+            name: "!!!NAME!!!-http-svc1"
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+          command:
+          - "/discovery"
+          args:
+          - "-addr=:8087"
+          - "-host"
+          - "http://etcd-discovery.cld.yourcompany.com:8087"
+          - "-etcd"
+          - "http://10.152.230.85:2379,http://10.152.230.87:2379"

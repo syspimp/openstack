@@ -1,0 +1,23 @@
+#cloud-config
+## ref https://coreos.com/os/docs/latest/cloud-config.html
+coreos:
+  etcd2:
+    # generate a new token for each unique cluster from the url http://etcd-discovery.cld.yourcompany.com:8087/new?size=1
+    # 'curl http://etcd-discovery.cld.yourcompany.com:8087/new?size=1' works
+    discovery: "http://etcd-discovery.cld.yourcompany.com:8087/44d22cbed1e55cd526ca35ae5bcaf58c"
+    # multi-region and multi-cloud deployments need to use $public_ipv4
+    advertise-client-urls: "http://$public_ipv4:2379"
+    listen-client-urls: "http://0.0.0.0:2379"
+    initial-advertise-peer-urls: "http://$public_ipv4:2380"
+    listen-peer-urls: "http://0.0.0.0:2380"
+  units:
+    - name: "etcd2.service"
+      command: "restart"
+    - name: "systemd-timesyncd.service"
+      command: "restart"
+# fix the time
+write_files:
+  - path: /etc/systemd/timesyncd.conf
+    content: |
+      [Time]
+      NTP=ntp1m7-lb.yourcompany.com

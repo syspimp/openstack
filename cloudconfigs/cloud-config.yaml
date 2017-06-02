@@ -1,0 +1,20 @@
+#cloud-config
+final_message: "configured from horizon console."
+bootcmd:
+  - echo i am bootcmd >> /var/log/bootcmd.log
+puppet:
+  conf:
+    agent:
+      tags: openstack_clients
+      environment: dev
+groups:
+  - infraeng
+users:
+  - name: infraeng
+    primary-group: infraeng
+    groups: wheel
+    lock-passwd: false
+    passwd: $6$g5LnVLge$mKw8dzgYD6PygdcCR3AadcSPIeafclupyjD9rcDszbPnkf6O8HCsmEhpQu046SKdpQKeDHL4yTBu4xqa/xeWO1
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDIjvReczAbUFuGdvXcXzgJLiRc7lvciP4PwKGMPvdu5zGHE39uYOLBt22vX958PBjSd5FkS4iu+zmgNBX4EvZEMab7Xfq2Lk7L7Nx4AzO9TnlRPtfyXhNr43Usq7IKF1oa4CMTY0BOLXjz6Am24J9LmuVlWMJZl82dypNINvGQBc0xO+OFWxl8dh8rwxtr4IIrd9+u8W9+aTv+oDpIDior4QN7mKPo/LwNPlptEzX/eS4I6lYuqJqj8D1hkW2lnO7chGWRF89lvhSrDl6iXurw8JLGPs5a6nAv4nmj7iXZwT8eGWzJfbm9E/gOgVf/LZnIbzOcsSwuZHEzK3LGCqN5 Jenkins Key

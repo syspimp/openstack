@@ -1,0 +1,20 @@
+kubernetes:
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: test5-from-openstack
+    labels:
+      name: test5-from-openstack
+  spec:
+    containers:
+    - name: test5-from-openstack
+      image: nginx
+      ports:
+        - containerPort: 80
+          protocol: TCP
+      resources:
+        limits:
+          memory: "128Mi"
+          cpu: "500m"
+      terminationMessagePath: "/dev/termination-log"
+      imagePullPolicy: "IfNotPresent"

@@ -1,0 +1,57 @@
+heat_template_version: 2013-05-23
+
+description: Simple template to deploy and test AWS with puppet tags
+
+parameters:
+  static_user:
+    type: string
+    description: The user to set the default yourcompany password. For troubleshooting.
+    default: infraeng
+  puppet_environment:
+    type: string
+    description: The environment you want the first puppet run to run inside
+    default: dev
+  puppet_tags:
+    type: string
+    description: The puppet tags to pass to puppet on first run. Comma delimited
+    default: openstack-clients
+
+
+resources:
+  my_instance:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: aws-us-east-1
+      image: Centos 7 x86_64 GenericCloud 1503
+      flavor: m1.amazon_ec2
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+            final_message: "configured from horizon console."
+            bootcmd:
+              - echo i am bootcmd >> /var/log/bootcmd.log
+            puppet:
+              conf:
+                agent:
+                  tags: puppet_tags
+                environment: puppet_environment
+            groups:
+              - static_user
+            users:
+              - name: static_user
+                primary-group: static_user
+                groups: wheel
+                lock-passwd: false
+                passwd: $6$g5LnVLge$mKw8dzgYD6PygdcCR3AadcSPIeafclupyjD9rcDszbPnkf6O8HCsmEhpQu046SKdpQKeDHL4yTBu4xqa/xeWO1
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                ssh-authorized-keys:
+                  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDIjvReczAbUFuGdvXcXzgJLiRc7lvciP4PwKGMPvdu5zGHE39uYOLBt22vX958PBjSd5FkS4iu+zmgNBX4EvZEMab7Xfq2Lk7L7Nx4AzO9TnlRPtfyXhNr43Usq7IKF1oa4CMTY0BOLXjz6Am24J9LmuVlWMJZl82dypNINvGQBc0xO+OFWxl8dh8rwxtr4IIrd9+u8W9+aTv+oDpIDior4QN7mKPo/LwNPlptEzX/eS4I6lYuqJqj8D1hkW2lnO7chGWRF89lvhSrDl6iXurw8JLGPs5a6nAv4nmj7iXZwT8eGWzJfbm9E/gOgVf/LZnIbzOcsSwuZHEzK3LGCqN5 Jenkins Key
+          params:
+            static_user: {get_param: static_user}
+            puppet_tags: {get_param: puppet_tags}
+            puppet_environment: {get_param: puppet_environment}
+outputs:
+  instance_ip:
+    description: The IP address of the deployed instance
+    value: { get_attr: [my_instance, first_address] }

@@ -1,0 +1,134 @@
+heat_template_version: 2013-05-23
+
+description: Simple template to deploy a 3 node Etcd cluster using Etcd discovery. Visit http://etcd-discovery.cld.yourcompany.com:8087/new?size=3 to generate a discovery URL.  Then input that url here.
+parameters:
+  image_name:
+    type: string
+    description: Name of the pod for your containers
+    default: test-etcd-cluster
+  autodiscovery_token:
+    type: string
+    description: IMPORTANT- Visit http://etcd-discovery.cld.yourcompany.com:8087/new?size=3 to generate a new 3 node etcd cluster.
+    default: 097420c694c7a010c4930cabc8669770
+resources:
+  etcd-cluster:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: kubernetes-cluster-1
+      image: Kubernetes Proxy
+      flavor: m1.kubernetes
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            kubernetes:
+              apiVersion: v1beta3
+              kind: ReplicationController
+              metadata:
+                name: image_name
+                labels:
+                  name: image_name
+              spec:   
+                replicas: 1
+                selector:
+                  name: image_name
+                template:
+                  metadata:
+                    name: image_name
+                    labels:
+                      name: image_name
+                  spec:
+                    containers:
+                    - name: image_name1
+                      image: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+                      ports:
+                      - containerPort: 2380
+                        protocol: TCP
+                        name: "image_name1-svc1"
+                      - containerPort: 2379
+                        protocol: TCP
+                        name: "image_name1-svc2"
+                      command:
+                      - "/etcd"
+                      args:
+                      - "-name"
+                      - "image_name1"
+                      - "-initial-advertise-peer-urls"
+                      - "http://server_ip:2380"
+                      - "-listen-peer-urls"
+                      - "http://0.0.0.0:2380"
+                      - "-listen-client-urls"
+                      - "http://0.0.0.0:2379"
+                      - "-advertise-client-urls"
+                      - "http://server_ip:2379"
+                      - "-discovery"
+                      - "http://etcd-discovery.cld.yourcompany.com:8087/autodiscovery_token"
+                    - name: image_name2
+                      image: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+                      ports:
+                      - containerPort: 2381
+                        protocol: TCP
+                        name: "image_name2-svc1"
+                      - containerPort: 2382
+                        protocol: TCP
+                        name: "image_name2-svc2"
+                      resources:
+                        limits:
+                          memory: "512Mi"
+                          cpu: "1000m"
+                      command:
+                      - "/etcd"
+                      args:
+                      - "-name"
+                      - "image_name2"
+                      - "-initial-advertise-peer-urls"
+                      - "http://server_ip:2380"
+                      - "-listen-peer-urls"
+                      - "http://0.0.0.0:2380"
+                      - "-listen-client-urls"
+                      - "http://0.0.0.0:2379"
+                      - "-advertise-client-urls"
+                      - "http://server_ip:2379"
+                      - "-discovery"
+                      - "http://etcd-discovery.cld.yourcompany.com:8087/autodiscovery_token"
+                    - name: image_name3
+                      image: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+                      ports:
+                      - containerPort: 2383
+                        protocol: TCP
+                        name: "image_name3-svc1"
+                      - containerPort: 2384
+                        protocol: TCP
+                        name: "image_name3-svc2"
+                      resources:
+                        limits:
+                          memory: "512Mi"
+                          cpu: "1000"
+                      command:
+                      - "/etcd"
+                      args:
+                      - "-name"
+                      - "image_name3"
+                      - "-initial-advertise-peer-urls"
+                      - "http://server_ip:2380"
+                      - "-listen-peer-urls"
+                      - "http://0.0.0.0:2380"
+                      - "-listen-client-urls"
+                      - "http://0.0.0.0:2379"
+                      - "-advertise-client-urls"
+                      - "http://server_ip:2379"
+                      - "-discovery"
+                      - "http://etcd-discovery.cld.yourcompany.com:8087/autodiscovery_token"
+          params:
+            image_name: {get_param: image_name}
+            autodiscovery_token: {get_param: autodiscovery_token}
+            server_ip: {get_attr: [instance-port, fixed_ips, 0, ip_address]}
+  instance-port:
+   type: OS::Neutron::Port
+   properties:
+     network_id: "3f2e3196-3699-4d21-8538-bab1609edd99"
+     security_groups: [default]
+outputs:
+  instance_ip:
+    description: The IP address of the proxy instance
+    value: { get_attr: [etcd-cluster, first_address] }

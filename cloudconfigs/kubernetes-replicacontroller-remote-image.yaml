@@ -1,0 +1,30 @@
+kubernetes:
+  apiVersion: v1beta3
+  kind: ReplicationController
+  metadata:
+    name: test-replicate
+    labels:
+      name: test-replicate
+  spec:
+    replicas: 1
+    selector:
+      name: test-replicate
+    template:
+      metadata:
+        name: test-replicate
+        labels:
+          name: test-replicate
+      spec:
+        containers:
+        - name: test-replicate
+          image: docker-registry.cld.yourcompany.com:5000/centos:7.1.1503
+          ports:
+          - containerPort: 22
+            protocol: TCP
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "1000m"
+          command:
+          - "/usr/sbin/sshd"
+          - "-D"

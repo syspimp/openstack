@@ -1,0 +1,50 @@
+kubernetes:
+  apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: daves-vm
+    labels:
+      name: daves-vm
+  spec:
+    replicas: 1
+    selector:
+      name: daves-vm
+    template:
+      metadata:
+        name: daves-vm
+        labels:
+          name: daves-vm
+      spec:
+        containers:
+        - name: daves-vm
+          image: docker-registry.cld.yourcompany.com:5000/centos/5.11.etyum-sshd:v2
+          volumeMounts:
+          - name: daves-vm-config
+            mountPath: "/mnt/config"
+          - name: daves-vm-storage
+            mountPath: "/mnt/storage"
+          command:
+          - "/usr/sbin/sshd"
+          - "-D"
+          ports:
+          - containerPort: 22
+            protocol: TCP
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "1000m"
+        volumes:
+        - name: daves-vm-config
+          iscsi:
+            targetPortal: 10.152.230.199:3260
+            iqn: iqn.2015-10.cld.yourcompany.com:storage.target00
+            lun: 0
+            fsType: ext4
+            readOnly: true
+        - name: daves-vm-storage
+          iscsi:
+            targetPortal: 10.152.230.199:3260
+            iqn: iqn.2015-10.cld.yourcompany.com:storage.target00
+            lun: 2
+            fsType: ext4
+            readOnly: false

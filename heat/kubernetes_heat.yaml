@@ -1,0 +1,111 @@
+heat_template_version: 2013-05-23
+
+description: Simple template to deploy any number Replicated Pods to the Kubernetes Cluster
+parameters:
+  image_name:
+    type: string
+    description: Name of pod and service for your containers
+    default: Change-Me
+  image_url:
+    type: string
+    description: "URL or image name to use for docker container, 10.152.205.107:5000/golang:1.4.2 for example"
+    default: docker-registry.cld.yourcompany.com:5000/centos/5.11.etyum-sshd:v2
+  image_replicas:
+    type: string
+    description: How many containers to for this replica set? 1 is guaranteed to work.
+    default: 1
+  image_port:
+    type: string
+    description: What port(s) do you want to expose?  Comma delimited
+    default: 22
+  image_cpu:
+    type: string
+    description: How many CPU cores? (In millicores. 1000 = 1 CPU core)
+    default: 1000
+  image_memory:
+    type: string
+    description: How much memory? (In megabytes. 128 = 128MB Ram)
+    default: 128
+  image_command:
+    type: string
+    description: Configuration command. This configures the container. Options are sshd or ldap at the moment.
+    default: sshd
+  image_lun:
+    type: string
+    description: The lun to use for storage volume. You need to create a new lun first. Don't use one already in use, or lun 0, which is the config drive.
+    default: 1
+resources:
+  img:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: kubernetes-cluster-1
+      image: Kubernetes Proxy
+      flavor: m1.kubernetes
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            kubernetes:
+              apiVersion: v1
+              kind: ReplicationController
+              metadata:
+                name: image_name
+                labels:
+                  name: image_name
+              spec:   
+                replicas: image_replicas
+                selector:
+                  name: image_name
+                template:
+                  metadata:
+                    name: image_name
+                    labels:
+                      name: image_name
+                  spec:
+                    containers:
+                    - name: image_name
+                      image: image_url
+                      volumeMounts:
+                      - name: image_name-config
+                        mountPath: "/mnt/config"
+                      - name: image_name-storage
+                        mountPath: "/mnt/storage"
+                      command:
+                      - "/mnt/config/config.sh"
+                      - "image_command"
+                      ports:
+                      - containerPort: image_port
+                        protocol: TCP
+                      resources:
+                        limits:
+                          memory: "image_memoryMi"
+                          cpu: "image_cpum"
+                    volumes:
+                    - name: image_name-config
+                      iscsi:
+                        targetPortal: 10.152.230.199:3260
+                        iqn: iqn.2015-10.cld.yourcompany.com:storage.target00
+                        lun: 0
+                        fsType: ext4
+                        readOnly: true      
+                    - name: image_name-storage
+                      iscsi:
+                        targetPortal: 10.152.230.199:3260
+                        iqn: iqn.2015-10.cld.yourcompany.com:storage.target00
+                        lun: image_lun
+                        fsType: ext4
+                        readOnly: false
+          params:
+            image_name: {get_param: image_name}
+            image_url: {get_param: image_url}
+            image_port: {get_param: image_port}
+            image_cpu: {get_param: image_cpu}
+            image_replicas: {get_param: image_replicas}
+            image_memory: {get_param: image_memory}
+            image_lun: {get_param: image_lun}
+            image_command: {get_param: image_command}
+
+outputs:
+  instance_ip:
+    description: The IP address of the proxy instance
+    value: { get_attr: [img, first_address] }

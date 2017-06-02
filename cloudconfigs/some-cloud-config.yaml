@@ -1,0 +1,124 @@
+#cloud-config
+yum_repos:
+  os:
+    baseurl: http://yum.yourcompany.com/proxy/centos7u1.x86_64/
+    enabled: true
+    failovermethod: priority
+    gpgcheck: true
+    gpgkey: http://pkgadm4m3.yourcompany.com/centos7u1.x86_64/RPM-GPG-KEY-CentOS-7
+    name: BASE-centos7-x86_64
+  updates:
+    baseurl: http://yum.yourcompany.com/proxy/centos7.x86_64.yum/2015Q4V1
+    enabled: true
+    failovermethod: priority
+    name: 2015Q4V1-centos7-x86_64
+  epel:
+    baseurl: http://yum.yourcompany.com/proxy/epel.7.x86_64
+    enabled: true
+    name: epel-centos7-x86_64
+  configm:
+    baseurl: http://yum.yourcompany.com/proxy/configm/client/rhel7.x86_64/2014Q2V1
+    enabled: true
+    name: 2014Q2V1-ConfigM-rhel7-x86_64
+
+ssh_pwauth: true
+users:
+  - name: root
+    ssh_pwauth: true
+    lock-passwd: false
+    expire: false
+    passwd: $6$g5LnVLge$mKw8dzgYD6PygdcCR3AadcSPIeafclupyjD9rcDszbPnkf6O8HCsmEhpQu046SKdpQKeDHL4yTBu4xqa/xeWO1
+chpasswd:
+  list: |
+    root:yourcompany123
+  expire: False 
+write_files:
+  - path: /etc/ssh/sshd_config
+    permissions: '0644'
+    owner: root:root
+    content: |
+      HostKey /etc/ssh/ssh_host_rsa_key
+      HostKey /etc/ssh/ssh_host_ecdsa_key
+      HostKey /etc/ssh/ssh_host_ed25519_key
+      SyslogFacility AUTHPRIV
+      AuthorizedKeysFile .ssh/authorized_keys
+      PasswordAuthentication yes
+      PermitRootLogin yes
+      ChallengeResponseAuthentication no
+      GSSAPIAuthentication yes
+      GSSAPICleanupCredentials no
+      UsePAM yes
+      X11Forwarding yes
+      UsePrivilegeSeparation sandbox          # Default for new installations.
+      AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+      AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+      AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+      AcceptEnv XMODIFIERS
+      Subsystem sftp  /usr/libexec/openssh/sftp-server
+  - path: /etc/snmp/snmpd.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      ## managed by cloud-init
+      sysname VMNAME
+      syslocation Openstack Juno M7
+      syscontact InfrastructureEngineering@yourcompany.com
+      sysdescr openstack nova vm named VMNAME
+      rocommunity public
+  - path: /etc/rsyslog.d/zenoss.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      $WorkDirectory /var/lib/rsyslog # where to place spool files
+      $ActionQueueFileName zenoss # unique name prefix for spool files
+      $ActionQueueMaxDiskSpace 1g   # 1gb space limit (use as much as possible)
+      $ActionQueueSaveOnShutdown on # save messages to disk on shutdown
+      $ActionQueueType LinkedList   # run asynchronously
+      $ActionResumeRetryCount -1    # infinite retries if host is down
+      *.* @10.152.230.182:514
+  - path: /yourcompany/tmp/puppet-firstboot.sh
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/bin/bash
+      # managed by cloud-config
+      if [ -d /yourcompany/tmp/firstboot ]
+      then
+         echo "*** puppet-firstboot.sh already run"
+         echo "*** puppet-firstboot.sh delete /yourcompany/tmp/firstboot to run again"
+         exit 0
+      fi
+      mkdir -p /yourcompany/tmp/firstboot /yourcompany/bin
+      /bin/systemctl restart network
+      hostname=$(hostname)
+      sed -i -e "s/VMNAME/${hostname}/g" /etc/snmp/snmpd.conf
+      yum -y update
+      sleep 1
+      rm -f /etc/yum.repos.d/CentOS-*
+      yum -y install net-snmp ntp ntpdate subversion puppet git ksh
+      systemctl enable snmpd
+      systemctl start snmpd
+      echo "*** firstboot.sh run on $(date)"
+  - path: /etc/rc.d/rc.local
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/bin/sh
+      #
+      # This script will be executed *after* all the other init scripts.
+      # You can put your own initialization stuff in here if you don't
+      # want to do the full Sys V style init stuff.
+      #
+      # managed by cloud-config
+
+      touch /var/lock/subsys/local
+      /yourcompany/tmp/puppet-firstboot.sh | logger -t firstboot
+      exit 0
+bootcmd:
+ - [ cloud-init-per, once, config_openstack_console, /bin/sed, -i, -e, 's/console=ttyS0,115200"/console=ttyS0,115200 nofb nomodeset"/g', /etc/default/grub ]
+ - [ cloud-init-per, once, config_grub, /sbin/grub2-mkconfig, -o, /boot/grub2/grub.cfg ]
+ - [ cloud-init-per, once, config_yumgpg, /bin/sed, -i, -e, 's/gpgcheck=1/gpgcheck=0/g', '/etc/yum.conf' ]
+ - [ cloud-init-per, once, config_yum, 'rm', '-f', "/etc/yum.repos.d/CentOS-Base.repo", "/etc/yum.repos.d/CentOS-CR.repo", "/etc/yum.repos.d/CentOS-Debuginfo.repo", "/etc/yum.repos.d/CentOS-fasttrack.repo", "/etc/yum.repos.d/CentOS-Sources.repo", "/etc/yum.repos.d/CentOS-Vault.repo" ]
+ - [ cloud-init-per, once, config_runonce, 'echo', "*** initial run finished" ]
+ - [ cloud-init-per, once, config_shutdown, 'shutdown', '-r', '+3' ]
+final_message: "configured from to be a kubernetes host."

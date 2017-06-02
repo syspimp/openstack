@@ -1,0 +1,30 @@
+#cloud-config
+## ref https://coreos.com/etcd/docs/latest/proxy.html
+coreos:
+  etcd2:
+    # use this to have a readonly proxy, good for production deployments
+    # proxy: "readonly"
+    proxy: "on"
+    listen-client-urls: "http://0.0.0.0:2379"
+    # use static entries to discover the peers
+    initial-cluster:  "master=http://dev-etcd-cluster.cld.yourcompany.com:2380"
+    # or use discovery to discover the peers
+    # discovery: "http://etcd-discovery.cld.yourcompany.com:8087/!!TOKEN!!"
+  units:
+    - name: "etcd2.service"
+      command: "restart"
+    - name: "systemd-timesyncd.service"
+      command: "restart"
+    - name: "docker.service"
+      command: "restart"
+      drop-ins:
+        - name: "50-insecure-registry.conf"
+          content: |
+            [Service]
+            Environment=DOCKER_OPTS='--insecure-registry="10.0.0.0/8"'
+# fix the time
+write_files:
+  - path: /etc/systemd/timesyncd.conf
+    content: |
+      [Time]
+      NTP=ntp1m7-lb.yourcompany.com

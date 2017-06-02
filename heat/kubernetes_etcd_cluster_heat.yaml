@@ -1,0 +1,155 @@
+heat_template_version: 2013-05-23
+
+description: Simple template to deploy a 3 node Etcd cluster that all share the same docker pod resources.
+parameters:
+  image_name:
+    type: string
+    description: Name of the pod for your containers
+    default: test-etcd-cluster
+  image_url:
+    type: string
+    description: "URL or image name to use for docker container, docker-registry.cld.yourcompany.com:5000/apps/etcd:latest for example"
+    default: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+  image_replicas:
+    type: string
+    description: How many containers to for this replica set? 1 is guaranteed to work. Need to solve the unique name for each etcd host. Leave this at 1.
+    default: 1
+  image_cpu:
+    type: string
+    description: How many CPU cores? (In millicores. 1000 = 1 CPU core)
+    default: 1000
+  image_memory:
+    type: string
+    description: How much memory per container? (In megabytes. 128 = 128MB Ram)
+    default: 512
+resources:
+  img:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: kubernetes-cluster-1
+      image: Kubernetes Proxy
+      flavor: m1.kubernetes
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            kubernetes:
+              apiVersion: v1beta3
+              kind: ReplicationController
+              metadata:
+                name: image_name
+                labels:
+                  name: image_name
+              spec:   
+                replicas: image_replicas
+                selector:
+                  name: image_name
+                template:
+                  metadata:
+                    name: image_name
+                    labels:
+                      name: image_name
+                  spec:
+                    containers:
+                    - name: image_name1
+                      image: image_url
+                      ports:
+                      - containerPort: 2380
+                        protocol: TCP
+                        name: "image_name1-svc1"
+                      - containerPort: 2379
+                        protocol: TCP
+                        name: "image_name1-svc2"
+                      resources:
+                        limits:
+                          memory: "image_memoryMi"
+                          cpu: "image_cpum"
+                      command:
+                      - "/etcd"
+                      args:
+                      - "-name"
+                      - "image_name1"
+                      - "-initial-advertise-peer-urls"
+                      - "http://127.0.0.1:2380"
+                      - "-listen-peer-urls"
+                      - "http://0.0.0.0:2380"
+                      - "-listen-client-urls"
+                      - "http://0.0.0.0:2379"
+                      - "-advertise-client-urls"
+                      - "http://0.0.0.0:2379"
+                      - "-initial-cluster"
+                      - "image_name1=http://127.0.0.1:2380,image_name2=http://127.0.0.1:2381,image_name3=http://127.0.0.1:2383"
+                      - "-initial-cluster-state"
+                      - "new"
+                    - name: image_name2
+                      image: image_url
+                      ports:
+                      - containerPort: 2381
+                        protocol: TCP
+                        name: "image_name2-svc1"
+                      - containerPort: 2382
+                        protocol: TCP
+                        name: "image_name2-svc2"
+                      resources:
+                        limits:
+                          memory: "image_memoryMi"
+                          cpu: "image_cpum"
+                      command:
+                      - "/etcd"
+                      args:
+                      - "-name"
+                      - "image_name2"
+                      - "-initial-advertise-peer-urls"
+                      - "http://127.0.0.1:2381"
+                      - "-listen-peer-urls"
+                      - "http://0.0.0.0:2381"
+                      - "-listen-client-urls"
+                      - "http://0.0.0.0:2382"
+                      - "-advertise-client-urls"
+                      - "http://0.0.0.0:2382"
+                      - "-initial-cluster"
+                      - "image_name1=http://127.0.0.1:2380,image_name2=http://127.0.0.1:2381,image_name3=http://127.0.0.1:2383"
+                      - "-initial-cluster-state"
+                      - "new"
+                    - name: image_name3
+                      image: image_url
+                      ports:
+                      - containerPort: 2383
+                        protocol: TCP
+                        name: "image_name3-svc1"
+                      - containerPort: 2384
+                        protocol: TCP
+                        name: "image_name3-svc2"
+                      resources:
+                        limits:
+                          memory: "image_memoryMi"
+                          cpu: "image_cpum"
+                      command:
+                      - "/etcd"
+                      args:
+                      - "-name"
+                      - "image_name3"
+                      - "-initial-advertise-peer-urls"
+                      - "http://127.0.0.1:2383"
+                      - "-listen-peer-urls"
+                      - "http://0.0.0.0:2383"
+                      - "-listen-client-urls"
+                      - "http://0.0.0.0:2384"
+                      - "-advertise-client-urls"
+                      - "http://0.0.0.0:2384"
+                      - "-initial-cluster"
+                      - "image_name1=http://127.0.0.1:2380,image_name2=http://127.0.0.1:2381,image_name3=http://127.0.0.1:2383"
+                      - "-initial-cluster-state"
+                      - "new"
+          params:
+            image_name: {get_param: image_name}
+            image_url: {get_param: image_url}
+            image_port: {get_param: image_port}
+            image_cpu: {get_param: image_cpu}
+            image_replicas: {get_param: image_replicas}
+            image_memory: {get_param: image_memory}
+
+outputs:
+  instance_ip:
+    description: The IP address of the proxy instance
+    value: { get_attr: [img, first_address] }

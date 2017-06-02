@@ -1,0 +1,108 @@
+kubernetes:
+  apiVersion: v1beta3
+  kind: ReplicationController
+  metadata:
+    name: $public_hostname
+    labels:
+      name: $public_hostname
+  spec:
+    replicas: 1
+    selector:
+      name: $public_hostname
+    template:
+      metadata:
+        name: $public_hostname
+        labels:
+          name: $public_hostname
+      spec:
+        containers:
+        - name: $public_hostname1
+          image: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+          ports:
+          - containerPort: 2380
+            protocol: TCP
+            name: "$public_hostname1-svc1"
+          - containerPort: 2379
+            protocol: TCP
+            name: "$public_hostname1-svc2"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "1000m"
+          command:
+          - "/etcd"
+          args:
+          - "-name"
+          - "$public_hostname1"
+          - "-initial-advertise-peer-urls"
+          - "http://$public_ipv4:2380"
+          - "-listen-peer-urls"
+          - "http://0.0.0.0:2380"
+          - "-listen-client-urls"
+          - "http://0.0.0.0:2379"
+          - "-advertise-client-urls"
+          - "http://$public_ipv4:2379"
+          - "-initial-cluster"
+          - "$public_hostname1=http://127.0.0.1:2380,$public_hostname2=http://127.0.0.1:2381,$public_hostname3=http://127.0.0.1:2383"
+          - "-initial-cluster-state"
+          - "new"
+        - name: $public_hostname2
+          image: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+          ports:
+          - containerPort: 2381
+            protocol: TCP
+            name: "$public_hostname2-svc1"
+          - containerPort: 2382
+            protocol: TCP
+            name: "$public_hostname2-svc2"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "1000m"
+          command:
+          - "/etcd"
+          args:
+          - "-name"
+          - "$public_hostname2"
+          - "-initial-advertise-peer-urls"
+          - "http://$public_ipv4:2381"
+          - "-listen-peer-urls"
+          - "http://0.0.0.0:2381"
+          - "-listen-client-urls"
+          - "http://0.0.0.0:2382"
+          - "-advertise-client-urls"
+          - "http://$public_ipv4:2382"
+          - "-initial-cluster"
+          - "$public_hostname1=http://127.0.0.1:2380,$public_hostname2=http://127.0.0.1:2381,$public_hostname3=http://127.0.0.1:2383"
+          - "-initial-cluster-state"
+          - "new"
+        - name: $public_hostname3
+          image: docker-registry.cld.yourcompany.com:5000/apps/etcd:latest
+          ports:
+          - containerPort: 2383
+            protocol: TCP
+            name: "$public_hostname3-svc1"
+          - containerPort: 2384
+            protocol: TCP
+            name: "$public_hostname3-svc2"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "1000m"
+          command:
+          - "/etcd"
+          args:
+          - "-name"
+          - "$public_hostname3"
+          - "-initial-advertise-peer-urls"
+          - "http://$public_ipv4:2383"
+          - "-listen-peer-urls"
+          - "http://0.0.0.0:2383"
+          - "-listen-client-urls"
+          - "http://0.0.0.0:2384  "
+          - "-advertise-client-urls"
+          - "http://$public_ipv4:2384"
+          - "-initial-cluster"
+          - "$public_hostname1=http://127.0.0.1:2380,$public_hostname2=http://127.0.0.1:2381,$public_hostname3=http://127.0.0.1:2383"
+          - "-initial-cluster-state"
+          - "new"
